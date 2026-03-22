@@ -330,27 +330,20 @@ function sampleTextPositions(nombre, count) {
 
   const fontFamily = '"Montserrat", sans-serif';
 
-  // Split name into lines
+  // Split name: one word per line for mobile readability
   const parts = nombre.split(' ');
-  let lines = [];
-  if (parts.length <= 2) {
-    lines = [nombre];
-  } else if (parts.length === 3) {
-    lines = [parts[0], parts.slice(1).join(' ')];
-  } else {
-    const mid = Math.ceil(parts.length / 2);
-    lines = [parts.slice(0, mid).join(' '), parts.slice(mid).join(' ')];
-  }
+  const lines = parts;
 
-  // Find optimal font size
+  // Find optimal font size for multiple lines
   let fontSize = 72;
   ctx.font = `900 ${fontSize}px ${fontFamily}`;
   const maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
   if (maxLineWidth > canvas.width * 0.85) {
     fontSize = Math.floor(fontSize * (canvas.width * 0.85) / maxLineWidth);
   }
-  if (lines.length > 1 && fontSize * lines.length * 1.2 > canvas.height * 0.8) {
-    fontSize = Math.floor((canvas.height * 0.8) / (lines.length * 1.2));
+  // Ensure all lines fit vertically
+  if (fontSize * lines.length * 1.15 > canvas.height * 0.85) {
+    fontSize = Math.floor((canvas.height * 0.85) / (lines.length * 1.15));
   }
 
   ctx.font = `900 ${fontSize}px ${fontFamily}`;
