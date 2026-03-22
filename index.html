@@ -298,7 +298,7 @@ const DATOS = [
 const PARTICLE_COUNT = 5000;
 const TEXT_CANVAS_W = 1024;
 const TEXT_CANVAS_H = 512;
-const LAG_SPEED = 0.04;
+const LAG_SPEED = 0.12;
 const NAME_CHANGE_INTERVAL = 400;
 const DISPERSE_RADIUS = 5;
 
@@ -573,17 +573,25 @@ async function initMediaPipe() {
 async function startCamera() {
   const video = document.getElementById('video');
   try {
+    // Try front camera first (mobile)
     videoStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }
     });
-    video.srcObject = videoStream;
-    await video.play();
-    return true;
-  } catch (e) {
-    console.warn('Camera not available:', e);
-    document.getElementById('status').textContent = 'Sin cámara — tocá la pantalla para interactuar';
-    return false;
+  } catch (e1) {
+    try {
+      // Fallback: any camera (desktop webcam)
+      videoStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 320 }, height: { ideal: 240 } }
+      });
+    } catch (e2) {
+      console.warn('No camera available:', e2);
+      document.getElementById('status').textContent = 'Sin cámara — tocá la pantalla para interactuar';
+      return false;
+    }
   }
+  video.srcObject = videoStream;
+  await video.play();
+  return true;
 }
 
 let lastVideoTime = -1;
@@ -736,7 +744,7 @@ function animate() {
     const targetZ = textZ + fieldZ * amp;
 
     // Smooth interpolation toward target
-    const speed = THREE.MathUtils.lerp(0.02, 0.04, insideness);
+    const speed = THREE.MathUtils.lerp(0.03, 0.12, insideness);
     posArray[i3]     += (targetX - posArray[i3]) * speed;
     posArray[i3 + 1] += (targetY - posArray[i3 + 1]) * speed;
     posArray[i3 + 2] += (targetZ - posArray[i3 + 2]) * speed;
