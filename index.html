@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Nombres — Instalación Interactiva</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@900&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    overflow: hidden;
+    font-family: 'Space Mono', monospace;
+    color: #fff;
+    width: 100vw;
+    height: 100vh;
+    touch-action: none;
+  }
+
+  #canvas3d {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+  }
+
+  #video {
+    position: fixed;
+    bottom: 16px; right: 16px;
+    width: 120px; height: 90px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    z-index: 10;
+    object-fit: cover;
+    transform: scaleX(-1);
+    opacity: 0.7;
+  }
+
+  #ui-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 24px;
+  }
+
+  #current-name {
+    display: none;
+  }
+
+  #data-tipificacion {
+    position: fixed;
+    top: 28%;
+    left: 0; right: 0;
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(12px, 2.2vw, 20px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #cc2200;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  #data-provincia {
+    position: fixed;
+    bottom: 28%;
+    left: 0; right: 0;
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(11px, 1.8vw, 17px);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffffff;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  #status {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-align: center;
+    opacity: 0.35;
+    margin-bottom: 8px;
+  }
+
+  #gesture-indicator {
+    position: fixed;
+    bottom: 16px; left: 16px;
+    z-index: 10;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    opacity: 0.5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #gesture-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #555;
+    transition: background 0.3s;
+  }
+
+  #gesture-dot.open { background: #4af; }
+  #gesture-dot.closed { background: #f64; }
+
+  #loading {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 100;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    transition: opacity 0.5s;
+  }
+
+  #loading.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #loading p {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+  }
+
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #start-btn {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 200;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    cursor: pointer;
+  }
+
+  #start-btn h1 {
+    font-size: clamp(20px, 5vw, 36px);
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  #start-btn p {
+    font-size: 13px;
+    opacity: 0.4;
+    letter-spacing: 0.1em;
+  }
+
+  #start-btn .tap {
+    font-size: 14px;
+    opacity: 0.6;
+    letter-spacing: 0.15em;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 12px 32px;
+    border-radius: 4px;
+    margin-top: 16px;
+    transition: all 0.3s;
+  }
+
+  #start-btn:hover .tap {
+    border-color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.05);
+  }
+
+  #start-btn.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div id="start-btn">
+  <h1>Nombres</h1>
+  <p>Instalación interactiva</p>
+  <div class="tap">Tocar para comenzar</div>
+</div>
+
+<div id="loading" class="hidden">
+  <div class="spinner"></div>
+  <p>Cargando cámara y modelos...</p>
+</div>
+
+<canvas id="canvas3d"></canvas>
+<video id="video" autoplay playsinline></video>
+
+<div id="data-tipificacion"></div>
+<div id="data-provincia"></div>
+
+<div id="ui-overlay">
+  <div id="current-name"></div>
+  <div id="status"></div>
+</div>
+
+<div id="gesture-indicator">
+  <div id="gesture-dot"></div>
+  <span id="gesture-label">esperando mano...</span>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { SSAOPass } from 'three/addons/postprocessing/SSAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ============================================================
+// DATOS (sample — reemplazá con tu CSV de 8945)
+// ============================================================
+const DATOS = [
+  { nombre: "ABACHIAN JUAN CARLOS", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ABAD ANA CATALINA", tipificacion: "ASESINATO", provincia: "TUCUMÁN" },
+  { nombre: "ABAD JULIO RICARDO", tipificacion: "DESAPARICIÓN FORZADA", provincia: "CÓRDOBA" },
+  { nombre: "ABAD OSCAR GERARDO", tipificacion: "DESAPARICIÓN FORZADA", provincia: "SANTA FE" },
+  { nombre: "ABAD ROBERTO RODOLFO TOMAS", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ABALLAY ROBERTO OMAR", tipificacion: "ASESINATO", provincia: "SAN JUAN" },
+  { nombre: "ABALO MARIA ELENA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ABARCA LUIS ALBERTO", tipificacion: "DESAPARICIÓN FORZADA", provincia: "MENDOZA" },
+  { nombre: "ABBA JORGE DANIEL", tipificacion: "DESAPARICIÓN FORZADA", provincia: "SANTA FE" },
+  { nombre: "ABBATE CAROLINA SOL", tipificacion: "ASESINATO", provincia: "BUENOS AIRES" },
+  { nombre: "ABDALA MARCELO FABIAN", tipificacion: "DESAPARICIÓN FORZADA", provincia: "TUCUMÁN" },
+  { nombre: "ABEID SUSANA MARTA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ABEL FRANCISCO JOSE", tipificacion: "DESAPARICIÓN FORZADA", provincia: "CÓRDOBA" },
+  { nombre: "ABELLA PATRICIA NORA", tipificacion: "ASESINATO", provincia: "BUENOS AIRES" },
+  { nombre: "ABELLO RICARDO ANDRES", tipificacion: "DESAPARICIÓN FORZADA", provincia: "ENTRE RÍOS" },
+  { nombre: "ABRAMOVICH DANIEL HUGO", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ABRIL SEBASTIAN NICOLAS", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ACCIARDI ELENA ROSA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ACEVEDO MARCOS GABRIEL", tipificacion: "ASESINATO", provincia: "MENDOZA" },
+  { nombre: "ACOSTA VERONICA BEATRIZ", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ACUÑA DIEGO MARTIN", tipificacion: "DESAPARICIÓN FORZADA", provincia: "CHACO" },
+  { nombre: "ADAMO SILVIA GRACIELA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "AGESTA MARIA INES", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "AGUERO PABLO ERNESTO", tipificacion: "ASESINATO", provincia: "CÓRDOBA" },
+  { nombre: "AGUILAR FERNANDA LUCIA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "SALTA" },
+  { nombre: "AGUILERA CARLOS ALBERTO", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "AGUIRRE JULIAN ANDRES", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "AHUMADA ROSA MARIA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "SAN LUIS" },
+  { nombre: "AIELLO GUSTAVO JAVIER", tipificacion: "ASESINATO", provincia: "BUENOS AIRES" },
+  { nombre: "AIMETTA ANDREA FABIANA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "SANTA FE" },
+  { nombre: "DAVIT CARLOS ALBERTO", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "ESPINOZA MARIA LAURA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "JUJUY" },
+  { nombre: "FERNANDEZ JUAN PABLO", tipificacion: "ASESINATO", provincia: "BUENOS AIRES" },
+  { nombre: "GARCIA MONICA BEATRIZ", tipificacion: "DESAPARICIÓN FORZADA", provincia: "CÓRDOBA" },
+  { nombre: "GONZALEZ PEDRO RAMON", tipificacion: "DESAPARICIÓN FORZADA", provincia: "TUCUMÁN" },
+  { nombre: "HERRERA LUCIA SOLEDAD", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "LOPEZ ANA GABRIELA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "MARTINEZ DIEGO FABIAN", tipificacion: "ASESINATO", provincia: "SANTA FE" },
+  { nombre: "PEREYRA CLAUDIA INES", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "RAMIREZ ELENA VICTORIA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "MENDOZA" },
+  { nombre: "SANCHEZ GUSTAVO OMAR", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" },
+  { nombre: "TORRES ADRIANA MARCELA", tipificacion: "ASESINATO", provincia: "CÓRDOBA" },
+  { nombre: "ZALAZAR MARIA EUGENIA", tipificacion: "DESAPARICIÓN FORZADA", provincia: "BUENOS AIRES" }
+];
+
+// ============================================================
+// CONFIG
+// ============================================================
+const PARTICLE_COUNT = 5000;
+const TEXT_CANVAS_W = 1024;
+const TEXT_CANVAS_H = 512;
+const LAG_SPEED = 0.04;
+const NAME_CHANGE_INTERVAL = 400;
+const DISPERSE_RADIUS = 5;
+
+// ============================================================
+// STATE
+// ============================================================
+let gestureValue = 0;
+let smoothedValue = 0;
+let prevSmoothedValue = 0;
+let currentNameIndex = 0;
+let lastNameChange = 0;
+let nameJustChanged = false;
+let handDetected = false;
+let namePositions = [];
+let gestureRecognizer = null;
+let videoStream = null;
+
+// ============================================================
+// TEXT SAMPLING — only the nombre, in Montserrat Black
+// ============================================================
+function sampleTextPositions(nombre, count) {
+  const canvas = document.createElement('canvas');
+  canvas.width = TEXT_CANVAS_W;
+  canvas.height = TEXT_CANVAS_H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const fontFamily = '"Montserrat", sans-serif';
+
+  // Split name into lines
+  const parts = nombre.split(' ');
+  let lines = [];
+  if (parts.length <= 2) {
+    lines = [nombre];
+  } else if (parts.length === 3) {
+    lines = [parts[0], parts.slice(1).join(' ')];
+  } else {
+    const mid = Math.ceil(parts.length / 2);
+    lines = [parts.slice(0, mid).join(' '), parts.slice(mid).join(' ')];
+  }
+
+  // Find optimal font size
+  let fontSize = 72;
+  ctx.font = `900 ${fontSize}px ${fontFamily}`;
+  const maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+  if (maxLineWidth > canvas.width * 0.85) {
+    fontSize = Math.floor(fontSize * (canvas.width * 0.85) / maxLineWidth);
+  }
+  if (lines.length > 1 && fontSize * lines.length * 1.2 > canvas.height * 0.8) {
+    fontSize = Math.floor((canvas.height * 0.8) / (lines.length * 1.2));
+  }
+
+  ctx.font = `900 ${fontSize}px ${fontFamily}`;
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const lineHeight = fontSize * 1.2;
+  const totalHeight = lineHeight * lines.length;
+  const startY = (canvas.height - totalHeight) / 2 + lineHeight / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, canvas.width / 2, startY + i * lineHeight);
+  });
+
+  // Sample pixels
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const whitePixels = [];
+
+  for (let y = 0; y < canvas.height; y++) {
+    for (let x = 0; x < canvas.width; x++) {
+      const idx = (y * canvas.width + x) * 4;
+      if (imageData.data[idx] > 128) {
+        whitePixels.push({
+          x: (x / canvas.width - 0.5) * 10,
+          y: -(y / canvas.height - 0.5) * 5
+        });
+      }
+    }
+  }
+
+  // Phase normalization
+  let minX = Infinity, maxX = -Infinity;
+  for (const p of whitePixels) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+  }
+  const xRange = maxX - minX || 1;
+
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    if (whitePixels.length > 0) {
+      const p = whitePixels[Math.floor(Math.random() * whitePixels.length)];
+      const phase = (p.x - minX) / xRange;
+      positions.push({
+        x: p.x + (Math.random()-0.5)*0.02,
+        y: p.y + (Math.random()-0.5)*0.02,
+        phase
+      });
+    } else {
+      positions.push({ x: (Math.random()-0.5)*6, y: (Math.random()-0.5)*3, phase: Math.random() });
+    }
+  }
+
+  return positions;
+}
+
+// ============================================================
+// THREE.JS SETUP
+// ============================================================
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.z = 8;
+
+// SSAO Post-processing (like TD's SSAO TOP)
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
+ssaoPass.kernelRadius = 0.3;       // radius of AO sampling
+ssaoPass.minDistance = 0.001;      // min distance for AO
+ssaoPass.maxDistance = 0.15;       // max distance for AO — tight for small cubes
+ssaoPass.output = SSAOPass.OUTPUT.Default;
+composer.addPass(ssaoPass);
+
+const outputPass = new OutputPass();
+composer.addPass(outputPass);
+
+// Lighting — emulates the AO look from TD
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
+scene.add(ambientLight);
+
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x222222, 0.6);
+hemiLight.position.set(0, 10, 0);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(3, 5, 4);
+scene.add(dirLight);
+
+const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+dirLight2.position.set(-2, -3, 2);
+scene.add(dirLight2);
+
+// Instanced cubes — per-instance color (red for tipificacion, white for nombre/provincia)
+const cubeGeo = new THREE.BoxGeometry(0.035, 0.035, 0.035);
+const cubeMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.65,
+  metalness: 0.0
+});
+const mesh = new THREE.InstancedMesh(cubeGeo, cubeMat, PARTICLE_COUNT);
+mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+scene.add(mesh);
+
+const dummy = new THREE.Object3D();
+const posArray = new Float32Array(PARTICLE_COUNT * 3);
+const seedArray = new Float32Array(PARTICLE_COUNT * 3);
+const rotSeedArray = new Float32Array(PARTICLE_COUNT * 3);
+// Noise identity: each particle's unique position in the noise field
+// Spread across a range — particles with close identities will cluster
+// but identities are NOT tied to text layout, so text shape breaks
+const noiseIdArray = new Float32Array(PARTICLE_COUNT * 3);
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const i3 = i * 3;
+  posArray[i3]     = (Math.random() - 0.5) * DISPERSE_RADIUS * 2 + 6;
+  posArray[i3 + 1] = (Math.random() - 0.5) * DISPERSE_RADIUS;
+  posArray[i3 + 2] = (Math.random() - 0.5) * DISPERSE_RADIUS;
+
+  seedArray[i3]     = Math.random() * 100;
+  seedArray[i3 + 1] = Math.random() * 100;
+  seedArray[i3 + 2] = Math.random() * 100;
+
+  rotSeedArray[i3]     = Math.random() * Math.PI * 2;
+  rotSeedArray[i3 + 1] = Math.random() * Math.PI * 2;
+  rotSeedArray[i3 + 2] = Math.random() * Math.PI * 2;
+
+  // Spread across a ~10 unit range (matches text world space)
+  noiseIdArray[i3]     = (Math.random() - 0.5) * 10;
+  noiseIdArray[i3 + 1] = (Math.random() - 0.5) * 5;
+  noiseIdArray[i3 + 2] = (Math.random() - 0.5) * 5;
+}
+
+// Sample initial name
+namePositions = sampleTextPositions(DATOS[0].nombre, PARTICLE_COUNT);
+
+// ============================================================
+// SMOOTH NOISE — organic, poetic movement
+// ============================================================
+// Simple gradient noise (smooth, flowing)
+function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+function lerp(a, b, t) { return a + t * (b - a); }
+
+function hash(x, y, z) {
+  let h = (x * 374761393 + y * 668265263 + z * 1274126177) | 0;
+  h = ((h ^ (h >> 13)) * 1274126177) | 0;
+  return (h & 0x7fffffff) / 0x7fffffff;
+}
+
+function smoothNoise3D(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = fade(x - xi), yf = fade(y - yi), zf = fade(z - zi);
+
+  const n000 = hash(xi, yi, zi) * 2 - 1;
+  const n100 = hash(xi+1, yi, zi) * 2 - 1;
+  const n010 = hash(xi, yi+1, zi) * 2 - 1;
+  const n110 = hash(xi+1, yi+1, zi) * 2 - 1;
+  const n001 = hash(xi, yi, zi+1) * 2 - 1;
+  const n101 = hash(xi+1, yi, zi+1) * 2 - 1;
+  const n011 = hash(xi, yi+1, zi+1) * 2 - 1;
+  const n111 = hash(xi+1, yi+1, zi+1) * 2 - 1;
+
+  const x00 = lerp(n000, n100, xf);
+  const x10 = lerp(n010, n110, xf);
+  const x01 = lerp(n001, n101, xf);
+  const x11 = lerp(n011, n111, xf);
+
+  const y0 = lerp(x00, x10, yf);
+  const y1 = lerp(x01, x11, yf);
+
+  return lerp(y0, y1, zf);
+}
+
+// ============================================================
+// MEDIAPIPE SETUP
+// ============================================================
+async function initMediaPipe() {
+  const { GestureRecognizer, FilesetResolver } = await import(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.mjs'
+  );
+
+  const vision = await FilesetResolver.forVisionTasks(
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
+  );
+
+  gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task',
+      delegate: 'GPU'
+    },
+    runningMode: 'VIDEO',
+    numHands: 1
+  });
+}
+
+async function startCamera() {
+  const video = document.getElementById('video');
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }
+    });
+    video.srcObject = videoStream;
+    await video.play();
+    return true;
+  } catch (e) {
+    console.warn('Camera not available:', e);
+    document.getElementById('status').textContent = 'Sin cámara — tocá la pantalla para interactuar';
+    return false;
+  }
+}
+
+let lastVideoTime = -1;
+
+function detectGesture() {
+  if (!gestureRecognizer) return;
+  const video = document.getElementById('video');
+  if (video.readyState < 2) return;
+
+  const now = performance.now();
+  if (video.currentTime === lastVideoTime) return;
+  lastVideoTime = video.currentTime;
+
+  try {
+    const results = gestureRecognizer.recognizeForVideo(video, now);
+
+    if (results.gestures && results.gestures.length > 0) {
+      handDetected = true;
+      const gesture = results.gestures[0][0];
+      const name = gesture.categoryName;
+
+      if (name === 'Closed_Fist') {
+        gestureValue = 1;
+      } else if (name === 'Open_Palm') {
+        gestureValue = 0;
+      } else if (name === 'Pointing_Up' || name === 'Victory' || name === 'ILoveYou') {
+        gestureValue = 0.3;
+      } else {
+        // Other gesture or None — keep previous
+      }
+
+      const dot = document.getElementById('gesture-dot');
+      const label = document.getElementById('gesture-label');
+      dot.className = gestureValue > 0.5 ? 'closed' : 'open';
+      label.textContent = name === 'Closed_Fist' ? 'puño cerrado' :
+                          name === 'Open_Palm' ? 'palma abierta' :
+                          name.toLowerCase();
+    } else {
+      handDetected = false;
+      document.getElementById('gesture-dot').className = '';
+      document.getElementById('gesture-label').textContent = 'esperando mano...';
+    }
+  } catch (e) {
+    // skip frame
+  }
+}
+
+// ============================================================
+// TOUCH FALLBACK (para cuando no hay cámara)
+// ============================================================
+let touchActive = false;
+
+canvas.addEventListener('touchstart', () => { touchActive = true; gestureValue = 1; });
+canvas.addEventListener('touchend', () => { touchActive = false; gestureValue = 0; });
+canvas.addEventListener('mousedown', () => { touchActive = true; gestureValue = 1; });
+canvas.addEventListener('mouseup', () => { touchActive = false; gestureValue = 0; });
+
+// ============================================================
+// ANIMATION LOOP
+// ============================================================
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const time = clock.getElapsedTime();
+
+  // Detect gesture each frame
+  detectGesture();
+
+  // Smooth value (Lag CHOP equivalent)
+  prevSmoothedValue = smoothedValue;
+  smoothedValue += (gestureValue - smoothedValue) * LAG_SPEED;
+
+  // Change name when crossing threshold going UP (starting to close)
+  const threshold = 0.35;
+  if (smoothedValue > threshold && prevSmoothedValue <= threshold) {
+    currentNameIndex = Math.floor(Math.random() * DATOS.length);
+    namePositions = sampleTextPositions(DATOS[currentNameIndex].nombre, PARTICLE_COUNT);
+    // Update HTML overlays
+    document.getElementById('data-tipificacion').textContent = DATOS[currentNameIndex].tipificacion;
+    document.getElementById('data-provincia').textContent = DATOS[currentNameIndex].provincia;
+  }
+
+  // Show/hide data overlays based on how formed the text is
+  const overlayOpacity = THREE.MathUtils.smoothstep(smoothedValue, 0.5, 0.85);
+  document.getElementById('data-tipificacion').style.opacity = overlayOpacity;
+  document.getElementById('data-provincia').style.opacity = overlayOpacity;
+
+  // Rotation intensity
+  const rotIntensity = THREE.MathUtils.lerp(0.15, 0.0, smoothedValue);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const i3 = i * 3;
+
+    // Text target position (home position)
+    const textX = namePositions[i]?.x || 0;
+    const textY = namePositions[i]?.y || 0;
+    const textZ = 0;
+    // Phase: 0 = left edge, 1 = right edge
+    const phase = namePositions[i]?.phase || 0;
+
+    // Bounding box edge: remap smoothedValue to overshoot
+    // so phase=0 and phase=1 particles are fully covered
+    const edgeSpread = 0.1;
+    const bboxEdge = smoothedValue * (1.0 + edgeSpread * 2) - edgeSpread;
+    // bboxEdge goes from -spread to 1+spread
+
+    const insideness = THREE.MathUtils.smoothstep(
+      bboxEdge,
+      phase - edgeSpread,
+      phase + edgeSpread
+    );
+    // insideness: 1 = fully formed (in text position), 0 = dissolved (noise)
+
+    // NOISE AS DISPLACEMENT FIELD (like TD Noise SOP)
+    // Formed: lookup from text position P → organic breathing, letters intact
+    // Dissolved: lookup from unique noise identity → text breaks, but
+    //   particles with close identities cluster together = organic masses
+    const t4d = time / 15.0;
+    const noiseSize = 3.0;
+
+    // Blend lookup position: text P when formed, unique identity when dissolved
+    const lx = THREE.MathUtils.lerp(noiseIdArray[i3], textX, insideness) / noiseSize;
+    const ly = THREE.MathUtils.lerp(noiseIdArray[i3+1], textY, insideness) / noiseSize;
+    const lz = THREE.MathUtils.lerp(noiseIdArray[i3+2], textZ, insideness) / noiseSize;
+
+    // Octave 1
+    const n1x = smoothNoise3D(lx, ly, t4d + lz);
+    const n1y = smoothNoise3D(lx + 37.7, ly + 37.7, t4d + 13.3 + lz);
+    const n1z = smoothNoise3D(lx + 71.1, ly + 71.1, t4d + 51.7 + lz);
+
+    // Octave 2 (harmonic spread 2, gain 0.5)
+    const n2x = smoothNoise3D(lx * 2, ly * 2, t4d * 2 + lz) * 0.5;
+    const n2y = smoothNoise3D(lx * 2 + 37.7, ly * 2 + 37.7, t4d * 2 + 13.3 + lz) * 0.5;
+    const n2z = smoothNoise3D(lx * 2 + 71.1, ly * 2 + 71.1, t4d * 2 + 51.7 + lz) * 0.5;
+
+    const fieldX = n1x + n2x;
+    const fieldY = n1y + n2y;
+    const fieldZ = n1z + n2z;
+
+    // Amplitude: tiny when formed (breathing), big when dissolved
+    const formedAmp = 0.04;
+    const dissolvedAmp = 5.0;
+    const amp = THREE.MathUtils.lerp(dissolvedAmp, formedAmp, insideness);
+
+    // DIRECT displacement from home position
+    const targetX = textX + fieldX * amp;
+    const targetY = textY + fieldY * amp;
+    const targetZ = textZ + fieldZ * amp;
+
+    // Smooth interpolation toward target
+    const speed = THREE.MathUtils.lerp(0.02, 0.04, insideness);
+    posArray[i3]     += (targetX - posArray[i3]) * speed;
+    posArray[i3 + 1] += (targetY - posArray[i3 + 1]) * speed;
+    posArray[i3 + 2] += (targetZ - posArray[i3 + 2]) * speed;
+
+    // Per-cube rotation: still when formed, gentle drift when dissolved
+    dummy.position.set(posArray[i3], posArray[i3+1], posArray[i3+2]);
+    const cubeRot = THREE.MathUtils.lerp(rotIntensity, 0, insideness);
+    dummy.rotation.set(
+      rotSeedArray[i3]     + time * 0.5 * cubeRot,
+      rotSeedArray[i3 + 1] + time * 0.4 * cubeRot,
+      rotSeedArray[i3 + 2] + time * 0.45 * cubeRot
+    );
+    // Scale down slightly when forming text
+    const s = THREE.MathUtils.lerp(1.0, 0.7, smoothedValue);
+    dummy.scale.setScalar(s);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+
+  mesh.instanceMatrix.needsUpdate = true;
+
+  // Subtle camera movement
+  camera.position.x = Math.sin(time * 0.1) * 0.2;
+  camera.position.y = Math.cos(time * 0.08) * 0.15;
+  camera.lookAt(0, 0, 0);
+
+  composer.render();
+}
+
+// ============================================================
+// RESIZE
+// ============================================================
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  ssaoPass.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============================================================
+// START
+// ============================================================
+document.getElementById('start-btn').addEventListener('click', async () => {
+  document.getElementById('start-btn').classList.add('hidden');
+  document.getElementById('loading').classList.remove('hidden');
+
+  // Wait for Montserrat Black to load
+  await document.fonts.ready;
+  // Re-sample now that font is available
+  namePositions = sampleTextPositions(DATOS[0].nombre, PARTICLE_COUNT);
+  document.getElementById('data-tipificacion').textContent = DATOS[0].tipificacion;
+  document.getElementById('data-provincia').textContent = DATOS[0].provincia;
+
+  let cameraOk = false;
+
+  try {
+    await initMediaPipe();
+    cameraOk = await startCamera();
+  } catch (e) {
+    console.warn('MediaPipe init failed:', e);
+    document.getElementById('status').textContent = 'Sin cámara — tocá/clickeá para interactuar';
+  }
+
+  if (!cameraOk) {
+    document.getElementById('video').style.display = 'none';
+    document.getElementById('gesture-indicator').innerHTML =
+      '<span>tocá la pantalla = cerrar puño</span>';
+  }
+
+  document.getElementById('loading').classList.add('hidden');
+  animate();
+});
+
+</script>
+</body>
+</html>
