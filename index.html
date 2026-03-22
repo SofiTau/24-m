@@ -36,7 +36,7 @@
 
   #video {
     position: fixed;
-    bottom: 12%;
+    bottom: 5%;
     left: 50%;
     transform: translateX(-50%) scaleX(-1);
     width: 150px; height: 112px;
@@ -46,6 +46,7 @@
     object-fit: cover;
     opacity: 0.7;
     cursor: pointer;
+    filter: grayscale(1);
   }
 
   #ui-overlay {
@@ -96,6 +97,74 @@
     color: #ffffff;
     opacity: 0;
     transition: opacity 0.4s;
+  }
+
+  #links-pill {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    cursor: pointer;
+  }
+
+  #links-pill .pill-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #fff;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.3s;
+  }
+
+  #links-pill .pill-btn:hover {
+    background: rgba(255,255,255,0.18);
+  }
+
+  #links-dropdown {
+    display: none;
+    margin-top: 8px;
+    background: rgba(0,0,0,0.9);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    padding: 14px 18px;
+    min-width: 280px;
+    max-width: 90vw;
+  }
+
+  #links-dropdown.open {
+    display: block;
+  }
+
+  #links-dropdown a {
+    display: block;
+    color: rgba(255,255,255,0.7);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    transition: color 0.2s;
+    line-height: 1.4;
+  }
+
+  #links-dropdown a:last-child {
+    border-bottom: none;
+  }
+
+  #links-dropdown a:hover {
+    color: #fff;
+  }
+
+  #links-dropdown .link-title {
+    color: rgba(255,255,255,0.95);
+    font-size: 12px;
   }
 
   #status {
@@ -237,6 +306,24 @@
 </div>
 
 <canvas id="canvas3d"></canvas>
+
+<div id="links-pill">
+  <div class="pill-btn" onclick="document.getElementById('links-dropdown').classList.toggle('open')">Links útiles</div>
+  <div id="links-dropdown">
+    <a href="https://datos.jus.gob.ar/dataset/registro-unificado-de-victimas-del-terrorismo-de-estado-ruvte" target="_blank">
+      <span class="link-title">Lista Ministerio de Justicia</span><br>Registro Unificado de Víctimas (RUVTE)
+    </a>
+    <a href="https://www.argentina.gob.ar/sites/default/files/2022/06/mapa_ccd_argentina_oct-2022_final_alta_208x148_1.pdf" target="_blank">
+      <span class="link-title">Mapa de Centros de Detención</span><br>CCD Argentina — Oct 2022
+    </a>
+    <a href="https://www.argentina.gob.ar/sites/default/files/2017/10/fundamentos_conceptuales_y_cuadros_estadisticos_del_ruvte_mayo_2022.pdf" target="_blank">
+      <span class="link-title">Información Estadística</span><br>Fundamentos y cuadros estadísticos del RUVTE
+    </a>
+    <a href="https://www.intel.gov/argentina/research" target="_blank">
+      <span class="link-title">Argentina Declassification Project</span><br>U.S. Intelligence Community
+    </a>
+  </div>
+</div>
 <video id="video" autoplay playsinline></video>
 
 <div id="data-tipificacion"></div>
@@ -620,6 +707,14 @@ async function flipCamera() {
 document.getElementById('video').addEventListener('click', (e) => {
   e.stopPropagation();
   flipCamera();
+});
+
+// Close links dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const pill = document.getElementById('links-pill');
+  if (!pill.contains(e.target)) {
+    document.getElementById('links-dropdown').classList.remove('open');
+  }
 });
 
 let lastVideoTime = -1;
