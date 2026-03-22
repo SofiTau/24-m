@@ -751,7 +751,7 @@ function animate() {
     const targetZ = textZ + fieldZ * amp;
 
     // Smooth interpolation toward target
-    const speed = THREE.MathUtils.lerp(0.03, 0.12, insideness);
+    const speed = THREE.MathUtils.lerp(0.015, 0.12, insideness);
     posArray[i3]     += (targetX - posArray[i3]) * speed;
     posArray[i3 + 1] += (targetY - posArray[i3 + 1]) * speed;
     posArray[i3 + 2] += (targetZ - posArray[i3 + 2]) * speed;
