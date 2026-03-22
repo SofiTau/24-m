@@ -36,14 +36,16 @@
 
   #video {
     position: fixed;
-    bottom: 16px; right: 16px;
-    width: 120px; height: 90px;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%) scaleX(-1);
+    width: 150px; height: 112px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.15);
     z-index: 10;
     object-fit: cover;
-    transform: scaleX(-1);
     opacity: 0.7;
+    cursor: pointer;
   }
 
   #ui-overlay {
@@ -577,16 +579,16 @@ async function initMediaPipe() {
   }
 }
 
+let currentFacingMode = 'user';
+
 async function startCamera() {
   const video = document.getElementById('video');
   try {
-    // Try front camera first (mobile)
     videoStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }
+      video: { facingMode: currentFacingMode, width: { ideal: 320 }, height: { ideal: 240 } }
     });
   } catch (e1) {
     try {
-      // Fallback: any camera (desktop webcam)
       videoStream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 320 }, height: { ideal: 240 } }
       });
@@ -597,9 +599,28 @@ async function startCamera() {
     }
   }
   video.srcObject = videoStream;
+  // Mirror front camera, don't mirror back camera
+  video.style.transform = currentFacingMode === 'user'
+    ? 'translateX(-50%) scaleX(-1)'
+    : 'translateX(-50%) scaleX(1)';
   await video.play();
   return true;
 }
+
+async function flipCamera() {
+  // Stop current stream
+  if (videoStream) {
+    videoStream.getTracks().forEach(t => t.stop());
+  }
+  currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+  await startCamera();
+}
+
+// Click on video to flip camera
+document.getElementById('video').addEventListener('click', (e) => {
+  e.stopPropagation();
+  flipCamera();
+});
 
 let lastVideoTime = -1;
 
