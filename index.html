@@ -591,8 +591,9 @@ for (let i = 0; i < PARTICLE_COUNT; i++) {
   noiseIdArray[i3 + 2] = (Math.random() - 0.5) * 5;
 }
 
-// Sample initial name
-namePositions = sampleTextPositions(DATOS[0].nombre, PARTICLE_COUNT);
+// Sample initial name (random each load)
+currentNameIndex = Math.floor(Math.random() * DATOS.length);
+namePositions = sampleTextPositions(DATOS[currentNameIndex].nombre, PARTICLE_COUNT);
 
 // ============================================================
 // SMOOTH NOISE — organic, poetic movement
@@ -918,9 +919,9 @@ document.getElementById('start-btn').addEventListener('click', async () => {
   // Wait for Montserrat Black to load
   await document.fonts.ready;
   // Re-sample now that font is available
-  namePositions = sampleTextPositions(DATOS[0].nombre, PARTICLE_COUNT);
-  document.getElementById('data-tipificacion').textContent = DATOS[0].tipificacion;
-  document.getElementById('data-provincia').textContent = DATOS[0].provincia;
+  namePositions = sampleTextPositions(DATOS[currentNameIndex].nombre, PARTICLE_COUNT);
+  document.getElementById('data-tipificacion').textContent = DATOS[currentNameIndex].tipificacion;
+  document.getElementById('data-provincia').textContent = DATOS[currentNameIndex].provincia;
 
   let cameraOk = false;
   const statusEl = document.getElementById('status');
